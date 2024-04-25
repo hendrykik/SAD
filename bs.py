@@ -1,8 +1,10 @@
-import math
 import random
-import time
-import matplotlib.pyplot as plt
 import numpy as np
+import math
+import time
+from heapq import heappop, heappush
+import matplotlib.pyplot as plt
+from sys import maxsize
 maxsize = float('inf')
 random.seed(15)
 
@@ -20,95 +22,90 @@ def generate_matrix(n, seed=12):
 
     return matrix
 
-def update_final_path(path):
+def bs_update_final_path(path):
     final_path[:] = path[:]
     final_path[N] = path[0]
 
-def minimal_cost(adj_matrix, node):
+def bs_minimal_cost(adj_matrix, node):
     minimal_cost = float('inf')
     for j in range(N):
         if adj_matrix[node][j] < minimal_cost and j != node:
             minimal_cost = adj_matrix[node][j]
     return minimal_cost
 
-def secondary_minimal_cost(adj_matrix, node):
-    min1, min2 = float('inf'), float('inf')
-    for j in range(N):
-        if node != j:
-            cost = adj_matrix[node][j]
-            if cost < min1:
-                min2 = min1
-                min1 = cost
-            elif cost < min2 and cost != min1:
-                min2 = cost
-    return min2
 
-def TSP_recursive(adj_matrix, current_bound, current_weight, depth, path, visited_nodes):
+
+# Global variables
+N = 0
+final_res = maxsize
+final_path = []
+beam_width = 10
+
+def bs_minimal_cost(adj_matrix, node):
+    return min([cost for cost in adj_matrix[node] if cost > 0])
+
+def bs_update_final_path(path):
+    global final_path
+    final_path = path + [path[0]]
+
+def bs_TSP_recursive(adj_matrix, current_bound, current_weight, depth, path, visited_nodes):
     global final_res
     if depth == N:
         if adj_matrix[path[depth - 1]][path[0]] != 0:
             current_result = current_weight + adj_matrix[path[depth - 1]][path[0]]
             if current_result < final_res:
-                update_final_path(path)
                 final_res = current_result
+                bs_update_final_path(path)
         return
 
+    candidates = []
     for node in range(N):
         if adj_matrix[path[depth - 1]][node] != 0 and not visited_nodes[node]:
             temp_bound = current_bound
             current_weight += adj_matrix[path[depth - 1]][node]
-            
-            if depth == 1:
-                current_bound -= (minimal_cost(adj_matrix, path[depth - 1]) + minimal_cost(adj_matrix, node)) / 2
-            else:
-                current_bound -= (secondary_minimal_cost(adj_matrix, path[depth - 1]) + minimal_cost(adj_matrix, node)) / 2
-                
+            current_bound -= (bs_minimal_cost(adj_matrix, path[depth - 1]) + bs_minimal_cost(adj_matrix, node)) / 2
             if current_bound + current_weight < final_res:
-                path[depth] = node
-                visited_nodes[node] = True
-                TSP_recursive(adj_matrix, current_bound, current_weight, depth + 1, path, visited_nodes)
-                
+                heappush(candidates, (current_bound + current_weight, node, path + [node], visited_nodes[:]))
             current_weight -= adj_matrix[path[depth - 1]][node]
             current_bound = temp_bound
-            visited_nodes[node] = False
 
-def traveling_salesman_problem(adj_matrix):
+    while candidates and len(candidates) > beam_width:
+        heappop(candidates)
+
+    while candidates:
+        _, node, new_path, new_visited_nodes = heappop(candidates)
+        new_visited_nodes[node] = True
+        bs_TSP_recursive(adj_matrix, current_bound, current_weight + adj_matrix[new_path[-2]][node], depth + 1, new_path, new_visited_nodes)
+
+def bs_traveling_salesman_problem(adj_matrix):
     global N, final_res, final_path
     N = len(adj_matrix)
-    final_res = float('inf')
+    final_res = maxsize
     final_path = [-1] * (N + 1)
-
-    initial_bound = sum((minimal_cost(adj_matrix, node) + secondary_minimal_cost(adj_matrix, node)) for node in range(N))
-    initial_bound = math.ceil(initial_bound / 2)
-
+    initial_bound = math.ceil(sum(bs_minimal_cost(adj_matrix, node) for node in range(N)))
     start_node = 0
-    path = [-1] * (N + 1)
-    path[0] = start_node
+    path = [start_node]
     visited_nodes = [False] * N
     visited_nodes[start_node] = True
-    
-    TSP_recursive(adj_matrix, initial_bound, 0, 1, path, visited_nodes)
+    bs_TSP_recursive(adj_matrix, initial_bound, 0, 1, path, visited_nodes)
 
-    
 if __name__ == '__main__':
     d = {}
-    for i in range(10,19):
+    beam_width = 10
+
+    for i in range(10, 19):
         N = i
         adj = generate_matrix(N)
-        final_path = [None] * (N + 1)
-        visited = [False] * N
-        final_res = maxsize
 
         start = time.time()
-        traveling_salesman_problem(adj)
+        bs_traveling_salesman_problem(adj)
         end = time.time()
 
         print("Minimum cost:", final_res)
-        print("Path Taken:", end=' ')
-        for i in range(N + 1):
-            print(final_path[i], end=' ')
-        print(end - start, "for ", N, "variables")
-        d[N] = end-start
+        print("Path Taken:", final_path)
+        print(f"Time taken: {end - start:.4f} seconds for {N} variables")
+
+        d[N] = end - start
     
     print(d)
 
