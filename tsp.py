@@ -6,9 +6,6 @@ import numpy as np
 maxsize = float('inf')
 random.seed(15)
 
-
-# N = int(input('Enter the size of the matrix (n x n): '))
-
 def generate_matrix(n, seed=12):
     matrix = []
 
@@ -23,70 +20,75 @@ def generate_matrix(n, seed=12):
 
     return matrix
 
-def copyToFinal(curr_path):
-    final_path[:N + 1] = curr_path[:]
-    final_path[N] = curr_path[0]
+def update_final_path(path):
+    final_path[:] = path[:]
+    final_path[N] = path[0]
 
-def firstMin(adj, i):
-    min = maxsize
-    for k in range(N):
-        if adj[i][k] < min and i != k:
-            min = adj[i][k]
-    return min
-
-def secondMin(adj, i):
-    first, second = maxsize, maxsize
+def minimal_cost(adj_matrix, node):
+    minimal_cost = float('inf')
     for j in range(N):
-        if i == j:
-            continue
-        if adj[i][j] <= first:
-            second = first
-            first = adj[i][j]
-        elif(adj[i][j] <= second and adj[i][j] != first):
-            second = adj[i][j]
-    return second
+        if adj_matrix[node][j] < minimal_cost and j != node:
+            minimal_cost = adj_matrix[node][j]
+    return minimal_cost
 
-def TSPRec(adj, curr_bound, curr_weight, level, curr_path, visited):
+def secondary_minimal_cost(adj_matrix, node):
+    min1, min2 = float('inf'), float('inf')
+    for j in range(N):
+        if node != j:
+            cost = adj_matrix[node][j]
+            if cost < min1:
+                min2 = min1
+                min1 = cost
+            elif cost < min2 and cost != min1:
+                min2 = cost
+    return min2
+
+def TSP_recursive(adj_matrix, current_bound, current_weight, depth, path, visited_nodes):
     global final_res
-    if level == N:
-        if adj[curr_path[level - 1]][curr_path[0]] != 0:
-            curr_res = curr_weight + adj[curr_path[level - 1]][curr_path[0]]
-            if curr_res < final_res:
-                copyToFinal(curr_path)
-                final_res = curr_res
+    if depth == N:
+        if adj_matrix[path[depth - 1]][path[0]] != 0:
+            current_result = current_weight + adj_matrix[path[depth - 1]][path[0]]
+            if current_result < final_res:
+                update_final_path(path)
+                final_res = current_result
         return
-    for i in range(N):
-        if adj[curr_path[level-1]][i] != 0 and visited[i] == False:
-            temp = curr_bound
-            curr_weight += adj[curr_path[level - 1]][i]
-            if level == 1:
-                curr_bound -= ((firstMin(adj, curr_path[level - 1]) + firstMin(adj, i)) / 2)
+
+    for node in range(N):
+        if adj_matrix[path[depth - 1]][node] != 0 and not visited_nodes[node]:
+            temp_bound = current_bound
+            current_weight += adj_matrix[path[depth - 1]][node]
+            
+            if depth == 1:
+                current_bound -= (minimal_cost(adj_matrix, path[depth - 1]) + minimal_cost(adj_matrix, node)) / 2
             else:
-                curr_bound -= ((secondMin(adj, curr_path[level - 1]) + firstMin(adj, i)) / 2)
-            if curr_bound + curr_weight < final_res:
-                curr_path[level] = i
-                visited[i] = True
-                TSPRec(adj, curr_bound, curr_weight, level + 1, curr_path, visited)
-            curr_weight -= adj[curr_path[level - 1]][i]
-            curr_bound = temp
-            visited = [False] * len(visited)
-            for j in range(level):
-                if curr_path[j] != -1:
-                    visited[curr_path[j]] = True
+                current_bound -= (secondary_minimal_cost(adj_matrix, path[depth - 1]) + minimal_cost(adj_matrix, node)) / 2
+                
+            if current_bound + current_weight < final_res:
+                path[depth] = node
+                visited_nodes[node] = True
+                TSP_recursive(adj_matrix, current_bound, current_weight, depth + 1, path, visited_nodes)
+                
+            current_weight -= adj_matrix[path[depth - 1]][node]
+            current_bound = temp_bound
+            visited_nodes[node] = False
 
-def TSP(adj):
-    curr_bound = 0
-    curr_path = [-1] * (N + 1)
-    visited = [False] * N
-    for i in range(N):
-        curr_bound += (firstMin(adj, i) + secondMin(adj, i))
-    curr_bound = math.ceil(curr_bound / 2)
-    visited[0] = True
-    curr_path[0] = 0
-    TSPRec(adj, curr_bound, 0, 1, curr_path, visited)
+def traveling_salesman_problem(adj_matrix):
+    global N, final_res, final_path
+    N = len(adj_matrix)
+    final_res = float('inf')
+    final_path = [-1] * (N + 1)
 
-# adj = [[0, 10, 15, 20], [10, 0, 35, 25], [15, 35, 0, 30], [20, 25, 30, 0]]
-# N = 4
+    initial_bound = sum((minimal_cost(adj_matrix, node) + secondary_minimal_cost(adj_matrix, node)) for node in range(N))
+    initial_bound = math.ceil(initial_bound / 2)
+
+    start_node = 0
+    path = [-1] * (N + 1)
+    path[0] = start_node
+    visited_nodes = [False] * N
+    visited_nodes[start_node] = True
+    
+    TSP_recursive(adj_matrix, initial_bound, 0, 1, path, visited_nodes)
+
     
 if __name__ == '__main__':
     d = {}
@@ -98,7 +100,7 @@ if __name__ == '__main__':
         final_res = maxsize
 
         start = time.time()
-        TSP(adj)
+        traveling_salesman_problem(adj)
         end = time.time()
 
         print("Minimum cost:", final_res)
