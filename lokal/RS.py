@@ -8,23 +8,49 @@ sys.path.append(parent_dir)
 from generatory.RandomNumberGenerator import RandomNumberGenerator
 
 
-def generate_tab(N, seed=12):
+def generate_tab(n, m, seed=12):
     generator = RandomNumberGenerator(12)
 
     p = []
-    for i in range(N):
-        p.append(generator.nextInt(1,99))
+    for i in range(m):
+        temp = []
+        for j in range(n):
+            temp.append(generator.nextInt(1,99))
+        p.append(temp)
 
     return p
 
+def RS(n, m, p):
+    # c = [[0 for i in range(n)] for j in range(m)]
+    c = [0 for i in range(m)]
+    kol_zad = [i for i in range(n)]
+
+
+    for i in range(n):
+        for j in range(m):
+            if i == 0 and j == 0:
+                c[j] = p[j][kol_zad[i]]
+            elif i == 0 and j > 0:
+                c[j] = c[j-1] + p[j][kol_zad[i]]
+            elif i > 0 and j == 0:
+                c[j] = c[j] + p[j][kol_zad[i]]
+            else:
+                c[j] = max(c[j-1], c[j]) + p[j][kol_zad[i]]
+                
+    print(c)
+
+
+    # return c(m-1)
+
 
 if __name__ == '__main__':
-    N = 5
-    p = generate_tab(N)
+    n = 5
+    m = 4
+    p = generate_tab(n, m)
     print(p)
 
     start = time.time()
-    # RS(p)
+    RS(n, m, p)
     end = time.time()
 
-    print(end - start, "for ", N, "variables")
+    print(end - start, "for ", n, "variables")
