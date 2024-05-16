@@ -20,7 +20,7 @@ def generate_tab(n, m, seed=12):
 
     return p
 
-def RS(n, m, p):
+def calculate_c(n, m, p):
     # c = [[0 for i in range(n)] for j in range(m)]
     c = [0 for i in range(m)]
     kol_zad = [i for i in range(n)]
@@ -50,7 +50,7 @@ if __name__ == '__main__':
     print(p)
 
     start = time.time()
-    RS(n, m, p)
+    calculate_c(n, m, p)
     end = time.time()
 
     print(end - start, "for ", n, "variables")
