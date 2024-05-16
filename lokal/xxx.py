@@ -2,6 +2,8 @@ import random
 import time
 import os
 import sys
+import matplotlib.pyplot as plt
+import numpy
 
 # Assuming RandomNumberGenerator is correctly implemented in the path
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -46,7 +48,7 @@ def get_neighbor(permutation):
     return neighbor
 
 
-def random_search(n, m, p, iterations=1000):
+def random_search(n, m, p, iterations=100000):
     current_solution = list(range(n))
     random.shuffle(current_solution)
     current_makespan = calculate_makespan(n, m, p, current_solution)
@@ -63,18 +65,40 @@ def random_search(n, m, p, iterations=1000):
 
 
 if __name__ == '__main__':
-    n = 5
-    m = 4
-    p = generate_tab(n, m)
-    print("Processing times matrix (p):")
-    for row in p:
-        print(row)
+    ns = [5, 10, 15, 20]
+    ms = [5, 10, 15, 20]
+    times = []
 
-    # Random Search
-    start = time.time()
-    best_perm_rs, best_makespan_rs = random_search(n, m, p)
-    end = time.time()
-    print("\nRandom Search:")
-    print("Best permutation:", best_perm_rs)
-    print("Best makespan:", best_makespan_rs)
-    print("Execution time:", end - start, "seconds")
+    for n in ns:
+        for m in ms:
+            p = generate_tab(n, m)
+
+            start = time.time()
+            best_perm_rs, best_makespan_rs = random_search(n, m, p)
+            end = time.time()
+
+            times.append((n, m, end - start))
+
+    plt.figure(figsize=(10, 6))
+    for n in ns:
+        n_times = [time for n_val, m_val, time in times if n_val == n]
+        plt.plot(ms, n_times, label=f'n={n}')
+    plt.xlabel('Liczba maszyn (m)')
+    plt.ylabel('Czas wykonania (s)')
+    plt.title('Czas wykonania w zależności od liczby maszyn')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    for m in ms:
+        m_times = [time for n_val, m_val, time in times if m_val == m]
+        plt.plot(ns, m_times, label=f'm={m}')
+    plt.xlabel('Liczba problemów (n)')
+    plt.ylabel('Czas wykonania (s)')
+    plt.title('Czas wykonania w zależności od liczby problemów')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+
