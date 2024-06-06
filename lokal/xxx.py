@@ -4,6 +4,7 @@ import os
 import sys
 import matplotlib.pyplot as plt
 import numpy
+import math
 
 # Assuming RandomNumberGenerator is correctly implemented in the path
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -60,45 +61,84 @@ def random_search(n, m, p, iterations=100000):
         if neighbor_makespan < current_makespan:
             current_solution = neighbor_solution
             current_makespan = neighbor_makespan
+            print(_, current_makespan)
+
 
     return current_solution, current_makespan
 
 
+def simulated_annealing(n, m, p, initial_temp=1000, cooling_rate=0.999, stopping_temp=1, max_iterations=100000):
+    current_solution = list(range(n))
+    random.shuffle(current_solution)
+    current_makespan = calculate_makespan(n, m, p, current_solution)
+    temp = initial_temp
+
+    best_solution = current_solution[:]
+    best_makespan = current_makespan
+
+    iteration = 0
+
+    while temp > stopping_temp and iteration < max_iterations:
+        neighbor_solution = get_neighbor(current_solution)
+        neighbor_makespan = calculate_makespan(n, m, p, neighbor_solution)
+
+        if neighbor_makespan < current_makespan:
+            current_solution = neighbor_solution
+            current_makespan = neighbor_makespan
+        else:
+            acceptance_prob = math.exp((current_makespan - neighbor_makespan) / temp)
+            if random.uniform(0, 1) < acceptance_prob:
+                current_solution = neighbor_solution
+                current_makespan = neighbor_makespan
+
+        if current_makespan < best_makespan:
+            best_solution = current_solution[:]
+            best_makespan = current_makespan
+            print(iteration, best_makespan)
+
+        temp *= cooling_rate
+        iteration += 1
+
+    print(best_solution)
+    return best_solution, best_makespan
+
+
+
 if __name__ == '__main__':
-    ns = [5, 10, 15, 20]
-    ms = [5, 10, 15, 20]
-    times = []
+    ns = [5, 10, 15, 18, 20, 25]
+    m = 10
+
+    rs_times = []
+    sa_times = []
 
     for n in ns:
-        for m in ms:
-            p = generate_tab(n, m)
+        p = generate_tab(n, m)
 
-            start = time.time()
-            best_perm_rs, best_makespan_rs = random_search(n, m, p)
-            end = time.time()
+        # Random Search
+        start = time.time()
+        best_perm_rs, best_makespan_rs = random_search(n, m, p)
+        print(best_perm_rs, best_makespan_rs)
+        end = time.time()
+        rs_times.append(end - start)
 
-            times.append((n, m, end - start))
+        # Simulated Annealing
+        start = time.time()
+        best_perm_sa, best_makespan_sa = simulated_annealing(n, m, p)
+        print(best_perm_sa, best_makespan_sa)
+        end = time.time()
+        sa_times.append(end - start)
 
+
+    print("Czasy RS", rs_times)
+    print("Czasy SA", sa_times)
+    # Wykres porównujący czasy wykonania dla Random Search i Simulated Annealing
     plt.figure(figsize=(10, 6))
-    for n in ns:
-        n_times = [time for n_val, m_val, time in times if n_val == n]
-        plt.plot(ms, n_times, label=f'n={n}')
-    plt.xlabel('Liczba maszyn (m)')
-    plt.ylabel('Czas wykonania (s)')
-    plt.title('Czas wykonania w zależności od liczby maszyn')
-    plt.legend()
-    plt.grid(True)
-    plt.show()
-
-    plt.figure(figsize=(10, 6))
-    for m in ms:
-        m_times = [time for n_val, m_val, time in times if m_val == m]
-        plt.plot(ns, m_times, label=f'm={m}')
+    plt.plot(ns, rs_times, marker='o', linestyle='-', label='Random Search')
+    plt.plot(ns, sa_times, marker='o', linestyle='-', label='Simulated Annealing')
     plt.xlabel('Liczba problemów (n)')
     plt.ylabel('Czas wykonania (s)')
-    plt.title('Czas wykonania w zależności od liczby problemów')
+    plt.title('Porównanie czasów wykonania dla Random Search i Simulated Annealing')
     plt.legend()
     plt.grid(True)
     plt.show()
-
 
