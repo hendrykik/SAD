@@ -86,17 +86,14 @@ def genetic_algorithm(jobs: List[Job], population_size: int, generations: int, m
 
     return best_schedule
 
-# Parameters
-n = 10  # Number of jobs
+n = 10 
 seed = 12
 population_size = 50
 generations = 100
 mutation_rate = 0.01
 
-# Generate jobs
 jobs = generator(n, seed)
 
-# Run genetic algorithm
 best_schedule = genetic_algorithm(jobs, population_size, generations, mutation_rate)
 print("Best schedule found:")
 for job in best_schedule:
